@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://yn5bc673h3ft"]
+
+[ext_resource type="Script" uid="uid://bmrsh4csu8x2f" path="res://Scenes/mainLogic.gd" id="1_ig7tw"]
+[ext_resource type="Texture2D" uid="uid://b88raltkaxy7u" path="res://Sprites/background_2.png" id="2_0xm2m"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_ig7tw")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="BackGround" type="Sprite2D" parent="."]
+position = Vector2(1.00002, 0.999937)
+scale = Vector2(1.27963, 1.27896)
+texture = ExtResource("2_0xm2m")
+
+[node name="TrickArea" type="Node2D" parent="."]
+position = Vector2(345, -320)

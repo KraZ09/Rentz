@@ -8,7 +8,7 @@ var trickIndex = 0 # Starts at 0, ends at numOfPlayers
 var cardAtlas = preload("res://Card/all_cards.png") as Texture2D # Spritesheet
 
 const numOfPlayers = 4
-var playerScene = preload("res://player.tscn") as PackedScene
+var playerScene = preload("res://Scenes/player.tscn") as PackedScene
 var players : Array[Player] = []
 
 @onready var trickArea: Node2D = $TrickArea

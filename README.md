@@ -1,3 +1,3 @@
 Godot version is 4.4.1
-WARNING! The code might be garbage
+The code might be garbage, I am terrible at coding
 Feel free to modify

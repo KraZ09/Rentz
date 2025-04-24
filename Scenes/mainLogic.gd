@@ -4,12 +4,15 @@ const suites = ["Diamonds", "Hearts", "Clubs", "Spades"]
 var deck: Array[Card] = []
 var currentTrick: Array[Card] = [] # Cards in the current round
 var trickIndex = 0 # Starts at 0, ends at numOfPlayers
+var cardsPerPlayer = 2 * numOfPlayers
+signal cardPlayed(player_id: int)
 
 var cardAtlas = preload("res://Card/all_cards.png") as Texture2D # Spritesheet
 
 const numOfPlayers = 4
 var playerScene = preload("res://Scenes/player.tscn") as PackedScene
 var players : Array[Player] = []
+var currentPlayerIndex  = 0
 
 @onready var trickArea: Node2D = $TrickArea
 
@@ -73,13 +76,16 @@ func displayHand(playerId: int) -> void: # Show the player's hand
 		
 		button.pressed.connect(func():
 			print("Player %d played: %s of %d" % [playerId, card.suit, card.value])
+			# Check if it is the player's turn
+			if (currentPlayerIndex != playerId):
+				print("Illegal move!")
+				return
+			
 			playCard(playerId, card) # call the function to play that card
-			thisButton.queue_free()
+			thisButton.queue_free() # Delete the button
 		)
 
-func distributeCards() -> void: # Give each player their cards
-	var cardsPerPlayer = 2 * numOfPlayers
-	
+func distributeCards() -> void: # Give each player their cards	
 	for r in range(cardsPerPlayer):
 		for i in range(numOfPlayers):
 			var card = deck.pop_front() # Take the top card and give it to the player
@@ -87,6 +93,7 @@ func distributeCards() -> void: # Give each player their cards
 			players[i].hand.append(card)
 
 func playCard(playerId: int, card : Card) -> void: # Logic for playing the card
+	# If the move is legal, proceed
 	players[playerId].hand.erase(card) # Remove the card from player's hand
 	currentTrick.append(card) # Add played card to trick
 	
@@ -95,12 +102,23 @@ func playCard(playerId: int, card : Card) -> void: # Logic for playing the card
 	playedCard.texture = card.image
 	playedCard.position += Vector2(trickIndex * 40,0)
 	trickArea.add_child(playedCard)
-	trickIndex += 1
 	
-	if trickIndex == numOfPlayers: # Complete trick
-		await get_tree().create_timer(1.0).timeout
-		trickIndex = 0
-		trickEnd()
+	emit_signal("cardPlayed", playerId)
+
+func RoundStart() -> void: # Minigame loop
+	var totalCardsPlayed = 0 # How many cards have been played the whole round
+	while (totalCardsPlayed < (cardsPerPlayer * numOfPlayers)):
+		for i in range(numOfPlayers):
+			currentPlayerIndex = i
+			
+			await cardPlayed
+			totalCardsPlayed += 1
+			trickIndex += 1
+			
+			if trickIndex == numOfPlayers: # Complete trick
+				await get_tree().create_timer(1.0).timeout
+				trickEnd()
+	print("Round over!")
 
 func trickEnd() -> void: # Determine the winner
 	# The first card determines what theo others play
@@ -115,16 +133,19 @@ func trickEnd() -> void: # Determine the winner
 	
 	print("Player %d won the trick with %s of %d" % [winnerId, leadSuit, highestValue])
 	
-	# Clear trick
+	# Remove visuals
 	for child in trickArea.get_children():
 		child.queue_free()
-		currentTrick.clear()
+	
+	trickIndex = 0
+	currentTrick.clear() # Clear array
 
 func _ready() -> void:
 	generateCards()
 	shuffleDeck()
 	instantiatePlayers()
 	distributeCards()
+	RoundStart()
 	
 	displayHand(0)
 	displayHand(1)

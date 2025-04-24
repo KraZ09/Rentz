@@ -102,8 +102,20 @@ func playCard(playerId: int, card : Card) -> void: # Logic for playing the card
 		trickIndex = 0
 		trickEnd()
 
-func trickEnd() -> void:
-	# FIND OUT WHO WON
+func trickEnd() -> void: # Determine the winner
+	# The first card determines what theo others play
+	var leadSuit = currentTrick[0].suit 
+	var highestValue = -1
+	var winnerId = -1
+	
+	for card in currentTrick:
+		if card.suit == leadSuit and card.value > highestValue:
+			highestValue = card.value
+			winnerId = card.ownerId
+	
+	print("Player %d won the trick with %s of %d" % [winnerId, leadSuit, highestValue])
+	
+	# Clear trick
 	for child in trickArea.get_children():
 		child.queue_free()
 		currentTrick.clear()

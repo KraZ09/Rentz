@@ -9,7 +9,7 @@ signal cardPlayed(player_id: int)
 var leadSuit
 var canPlay := true
 
-var cardAtlas = preload("res://Card/all_cards.png") as Texture2D # Spritesheet
+var cardAtlas = preload("res://Sprites/all_cards.png") as Texture2D # Spritesheet
 
 const numOfPlayers = 4
 var playerScene = preload("res://Scenes/player.tscn") as PackedScene

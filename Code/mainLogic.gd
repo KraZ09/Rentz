@@ -15,6 +15,7 @@ const numOfPlayers = 4
 var playerScene = preload("res://Scenes/player.tscn") as PackedScene
 var players : Array[Player] = []
 var currentPlayerIndex  = 0
+var startingPlayerId : int = 0
 
 @onready var trickArea: Node2D = $TrickArea
 
@@ -136,8 +137,9 @@ func playCard(playerId: int, card : Card) -> void: # Logic for playing the card
 func RoundStart() -> void: # Minigame loop
 	var totalCardsPlayed = 0 # How many cards have been played the whole round
 	while (totalCardsPlayed < (cardsPerPlayer * numOfPlayers)):
-		for i in range(numOfPlayers):
-			currentPlayerIndex = i
+		for j in range(numOfPlayers):
+			currentPlayerIndex = (startingPlayerId + j) % numOfPlayers 
+			# Make it so it loops thorugh all players, starting at the last Winner
 			
 			await cardPlayed
 			totalCardsPlayed += 1
@@ -161,6 +163,7 @@ func trickEnd() -> void: # Determine the winner
 			winnerId = card.ownerId
 	
 	print("Player %d won the trick with %s of %d" % [winnerId, leadSuit, highestValue])
+	startingPlayerId = winnerId # For the next round, the winner is going to pick a suit
 	
 	# Remove visuals
 	for child in trickArea.get_children():

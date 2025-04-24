@@ -7,6 +7,7 @@ var trickIndex = 0 # Starts at 0, ends at numOfPlayers
 var cardsPerPlayer = 2 * numOfPlayers
 signal cardPlayed(player_id: int)
 var leadSuit
+var canPlay := true
 
 var cardAtlas = preload("res://Card/all_cards.png") as Texture2D # Spritesheet
 
@@ -63,8 +64,12 @@ func instantiatePlayers() -> void: # Make the players actually exist
 		players.append(p)
 
 func isValid(card: Card, playerId: int) -> bool: # Validate moves
+	if not canPlay:
+		print("Wait for the trick to clear!")
+		return false
+	
 	if (currentPlayerIndex != playerId): # Check if it is the player's turn
-		print("Illegal move!")
+		print("Not your turn!")
 		return false
 	else:
 		var hasLeadSuit : bool = false
@@ -139,8 +144,10 @@ func RoundStart() -> void: # Minigame loop
 			trickIndex += 1
 			
 			if trickIndex == numOfPlayers: # Complete trick
+				canPlay = false
 				await get_tree().create_timer(1.0).timeout
 				trickEnd()
+				canPlay = true
 	print("Round over!")
 
 func trickEnd() -> void: # Determine the winner

@@ -6,6 +6,7 @@ var currentTrick: Array[Card] = [] # Cards in the current round
 var trickIndex = 0 # Starts at 0, ends at numOfPlayers
 var cardsPerPlayer = 2 * numOfPlayers
 signal cardPlayed(player_id: int)
+var leadSuit
 
 var cardAtlas = preload("res://Card/all_cards.png") as Texture2D # Spritesheet
 
@@ -66,6 +67,21 @@ func isValid(card: Card, playerId: int) -> bool: # Validate moves
 		print("Illegal move!")
 		return false
 	else:
+		var hasLeadSuit : bool = false
+		# Check if the player has the suit, if not let them play anything
+		
+		if (currentTrick.size() == 0): # If it is the first round, don't check
+			return true
+		else : # If the leadSuit has been chosen
+			for c in players[playerId].hand: # Check every card in his hand for the leadSuit
+				if (c.suit == leadSuit):
+					hasLeadSuit = true
+					break
+		if hasLeadSuit and (card.suit != leadSuit): # Make the player follow the suit
+			print("You must follow suit!")
+			return false
+		
+		# Everything is fine
 		return true
 
 func displayHand(playerId: int) -> void: # Show the player's hand
@@ -101,6 +117,9 @@ func playCard(playerId: int, card : Card) -> void: # Logic for playing the card
 	players[playerId].hand.erase(card) # Remove the card from player's hand
 	currentTrick.append(card) # Add played card to trick
 	
+	if (currentTrick.size() == 1): # Set the lead if it is the first card
+		leadSuit = currentTrick[0].suit
+	
 	# Show the current trick
 	var playedCard = Sprite2D.new()
 	playedCard.texture = card.image
@@ -126,7 +145,6 @@ func RoundStart() -> void: # Minigame loop
 
 func trickEnd() -> void: # Determine the winner
 	# The first card determines what theo others play
-	var leadSuit = currentTrick[0].suit 
 	var highestValue = -1
 	var winnerId = -1
 	

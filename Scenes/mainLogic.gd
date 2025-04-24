@@ -61,6 +61,13 @@ func instantiatePlayers() -> void: # Make the players actually exist
 		add_child(p)
 		players.append(p)
 
+func isValid(card: Card, playerId: int) -> bool: # Validate moves
+	if (currentPlayerIndex != playerId): # Check if it is the player's turn
+		print("Illegal move!")
+		return false
+	else:
+		return true
+
 func displayHand(playerId: int) -> void: # Show the player's hand
 	for i in range(players[playerId].hand.size()):
 		# For convenience these are buttons
@@ -77,12 +84,9 @@ func displayHand(playerId: int) -> void: # Show the player's hand
 		button.pressed.connect(func():
 			print("Player %d played: %s of %d" % [playerId, card.suit, card.value])
 			# Check if it is the player's turn
-			if (currentPlayerIndex != playerId):
-				print("Illegal move!")
-				return
-			
-			playCard(playerId, card) # call the function to play that card
-			thisButton.queue_free() # Delete the button
+			if isValid(card, playerId):
+				playCard(playerId, card) # call the function to play that card
+				thisButton.queue_free() # Delete the button
 		)
 
 func distributeCards() -> void: # Give each player their cards	

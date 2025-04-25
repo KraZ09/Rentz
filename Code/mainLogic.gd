@@ -164,9 +164,9 @@ func RoundStart(gameMode : String) -> void: # Minigame loop
 				await get_tree().create_timer(1.0).timeout
 				trickEnd()
 				canPlay = true
+				# After completing the trick, check for remaining objectives
+				earlyEndCheck(gameMode)
 			
-			# After completing the trick, check for remaining objectives
-			earlyEndCheck(gameMode)
 			if roundShouldEnd:
 				print("No objectives left! Round ended early")
 				# NOTE Delete all visuals

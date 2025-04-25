@@ -4,18 +4,21 @@ const suites = ["Diamonds", "Hearts", "Clubs", "Spades"]
 var deck: Array[Card] = []
 var currentTrick: Array[Card] = [] # Cards in the current round
 var trickIndex = 0 # Starts at 0, ends at numOfPlayers
-var cardsPerPlayer = 2 * numOfPlayers
+var cardsPerPlayer = 2 * numOfPlayers # How many cards does each player have
 signal cardPlayed(player_id: int)
-var leadSuit
-var canPlay := true
+var leadSuit # Which suit wins the trick
+var canPlay := true # Can the players play a card
+
+var gameModes = ["pig"] # List of playable gameModes
+var currentGameMode : String
 
 var cardAtlas = preload("res://Sprites/all_cards.png") as Texture2D # Spritesheet
 
 const numOfPlayers = 4
 var playerScene = preload("res://Scenes/player.tscn") as PackedScene
 var players : Array[Player] = []
-var currentPlayerIndex  = 0
-var startingPlayerId : int = 0
+var currentPlayerIndex  = 0 # Id for the player that has to play
+var startingPlayerId : int = 0 # Id of the player that starts the trick
 
 @onready var trickArea: Node2D = $TrickArea
 
@@ -134,7 +137,10 @@ func playCard(playerId: int, card : Card) -> void: # Logic for playing the card
 	
 	emit_signal("cardPlayed", playerId)
 
-func RoundStart() -> void: # Minigame loop
+func RoundStart(gameMode : String) -> void: # Minigame loop
+	shuffleDeck() # Shuffle the deck and give every player their cards
+	distributeCards()
+	
 	var totalCardsPlayed = 0 # How many cards have been played the whole round
 	while (totalCardsPlayed < (cardsPerPlayer * numOfPlayers)):
 		for j in range(numOfPlayers):
@@ -151,6 +157,8 @@ func RoundStart() -> void: # Minigame loop
 				trickEnd()
 				canPlay = true
 	print("Round over!")
+	calculateScore(gameMode) # Calculate the scores
+	displayScores() # Show all of the scores
 
 func trickEnd() -> void: # Determine the winner
 	# The first card determines what theo others play
@@ -172,12 +180,28 @@ func trickEnd() -> void: # Determine the winner
 	trickIndex = 0
 	currentTrick.clear() # Clear array
 
+func displayScores() -> void: # Display all scores
+	for p in players:
+		print("Player %d scored %d points" % [p.id, p.score])
+
+# Calculate the scores based on gamemode
+func calculateScore(gameMode : String) -> void:  
+	var rScore = 0 # Score of the current round
+	match gameMode:
+		# For the pig variant, the player who wins the K of Hearts loses 200 points
+		"pig": 
+			for player in players: # Loop through the hands of all players
+				for card in player.wonCards:
+					if card.value == 14 and card.suit == "Hearts":
+						player.score -= 200 # - 200 points
+						return # There is only one pig in the game so no need to search further
+		# Other gamemodes
+
 func _ready() -> void:
 	generateCards()
-	shuffleDeck()
 	instantiatePlayers()
-	distributeCards()
-	RoundStart()
+	currentGameMode = "pig"
+	RoundStart(currentGameMode)
 	
 	displayHand(0)
 	displayHand(1)

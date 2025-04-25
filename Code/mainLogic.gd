@@ -8,6 +8,9 @@ var cardsPerPlayer = 2 * numOfPlayers # How many cards does each player have
 signal cardPlayed(player_id: int)
 var leadSuit # Which suit wins the trick
 var canPlay := true # Can the players play a card
+# If the objective of the game has been reached but player's haven't finished their cards...
+# the round will end early (Ex: Pig was won in first trick)
+var roundShouldEnd := false
 
 var gameModes = ["pig"] # List of playable gameModes
 var currentGameMode : String
@@ -44,7 +47,7 @@ func generateCards() -> void: # Generate the DECK
 		
 		var ace = Card.new()
 		ace.suit = suit
-		ace.value = 15
+		ace.value = 14 # K is 13
 		ace.image = createCardTexture(s, 0) # Ace is at index 0 in sheet
 		deck.append(ace)
 
@@ -68,8 +71,8 @@ func instantiatePlayers() -> void: # Make the players actually exist
 		players.append(p)
 
 func isValid(card: Card, playerId: int) -> bool: # Validate moves
-	if not canPlay:
-		print("Wait for the trick to clear!")
+	if not canPlay: # Make the players unable to play while any type of loading
+		print("Can't play now!")
 		return false
 	
 	if (currentPlayerIndex != playerId): # Check if it is the player's turn
@@ -99,7 +102,7 @@ func displayHand(playerId: int) -> void: # Show the player's hand
 		# They are only created on this function which is called only for the user
 		var card = players[playerId].hand[i]
 		
-		var button = TextureButton.new()
+		var button = TextureButton.new() # Create and move the button
 		button.texture_normal = card.image
 		button.position = Vector2(cardWidth * i - 900, playerId * 150 - 70)
 		add_child(button)
@@ -107,14 +110,13 @@ func displayHand(playerId: int) -> void: # Show the player's hand
 		var thisButton = button
 		
 		button.pressed.connect(func():
-			print("Player %d played: %s of %d" % [playerId, card.suit, card.value])
 			# Check if it is the player's turn
 			if isValid(card, playerId):
-				playCard(playerId, card) # call the function to play that card
+				playCard(playerId, card) # Call the function to play the clicked card
 				thisButton.queue_free() # Delete the button
 		)
 
-func distributeCards() -> void: # Give each player their cards	
+func distributeCards() -> void: # Give each player their cards
 	for r in range(cardsPerPlayer):
 		for i in range(numOfPlayers):
 			var card = deck.pop_front() # Take the top card and give it to the player
@@ -135,6 +137,8 @@ func playCard(playerId: int, card : Card) -> void: # Logic for playing the card
 	playedCard.position += Vector2(trickIndex * 40,0)
 	trickArea.add_child(playedCard)
 	
+	print("Player %d played: %d of %s" % [playerId, card.value, card.suit])
+	
 	emit_signal("cardPlayed", playerId)
 
 func RoundStart(gameMode : String) -> void: # Minigame loop
@@ -147,31 +151,52 @@ func RoundStart(gameMode : String) -> void: # Minigame loop
 			currentPlayerIndex = (startingPlayerId + j) % numOfPlayers 
 			# Make it so it loops thorugh all players, starting at the last Winner
 			
+			# Wait for player to play a card
 			await cardPlayed
 			totalCardsPlayed += 1
 			trickIndex += 1
 			
-			if trickIndex == numOfPlayers: # Complete trick
+			# Complete trick if every player has put down a card
+			if trickIndex == numOfPlayers:
 				canPlay = false
 				await get_tree().create_timer(1.0).timeout
 				trickEnd()
 				canPlay = true
+			
+			# After completing the trick, check for remaining objectives
+			earlyEndCheck(gameMode)
+			if roundShouldEnd:
+				print("No objectives left! Round ended early")
+				# NOTE Delete all visuals
+				break # Stop the round
+	
 	print("Round over!")
 	calculateScore(gameMode) # Calculate the scores
 	displayScores() # Show all of the scores
+	roundEnd() # Delete unecessary data
 
-func trickEnd() -> void: # Determine the winner
-	# The first card determines what theo others play
+func roundEnd() -> void: # Delete all data except score
+	for p in players:
+		p.wonCards.clear()
+		p.hand.clear()
+
+func trickEnd() -> void: # Determine the winner of the currentTrick
+	# The first card determines what the others must play
 	var highestValue = -1
 	var winnerId = -1
 	
-	for card in currentTrick:
+	for card in currentTrick: # Find out who won the trick
 		if card.suit == leadSuit and card.value > highestValue:
 			highestValue = card.value
 			winnerId = card.ownerId
 	
-	print("Player %d won the trick with %s of %d" % [winnerId, leadSuit, highestValue])
-	startingPlayerId = winnerId # For the next round, the winner is going to pick a suit
+	print("Player %d won the trick with %d of %s" % [winnerId, highestValue, leadSuit])
+	startingPlayerId = winnerId # For the next round, the winner is going to pick the leadSuit
+	
+	# Give all of the cards in the trick to the winning player
+	for k in currentTrick: # Loop through all 4 cards
+		k.ownerId = winnerId # Set the id
+		players[winnerId].wonCards.append(k) # Add it to wonCards array
 	
 	# Remove visuals
 	for child in trickArea.get_children():
@@ -184,6 +209,16 @@ func displayScores() -> void: # Display all scores
 	for p in players:
 		print("Player %d scored %d points" % [p.id, p.score])
 
+func earlyEndCheck(gameMode : String) -> void: # Avoid tricks that do not affect score
+	roundShouldEnd = false # Reset earlyEnd bool
+	match gameMode:
+		"pig": # If the pig is no longer in the game, end the round eary
+			for player in players:
+				for c in player.wonCards:
+					if c.value == 13 and c.suit == "Hearts":
+						roundShouldEnd = true # Pig was found, end round
+						return
+
 # Calculate the scores based on gamemode
 func calculateScore(gameMode : String) -> void:  
 	var rScore = 0 # Score of the current round
@@ -192,7 +227,7 @@ func calculateScore(gameMode : String) -> void:
 		"pig": 
 			for player in players: # Loop through the hands of all players
 				for card in player.wonCards:
-					if card.value == 14 and card.suit == "Hearts":
+					if card.value == 13 and card.suit == "Hearts":
 						player.score -= 200 # - 200 points
 						return # There is only one pig in the game so no need to search further
 		# Other gamemodes

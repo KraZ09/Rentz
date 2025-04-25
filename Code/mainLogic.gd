@@ -146,7 +146,7 @@ func RoundStart(gameMode : String) -> void: # Minigame loop
 	distributeCards()
 	
 	var totalCardsPlayed = 0 # How many cards have been played the whole round
-	while (totalCardsPlayed < (cardsPerPlayer * numOfPlayers)):
+	while (totalCardsPlayed < (cardsPerPlayer * numOfPlayers) and !roundShouldEnd):
 		for j in range(numOfPlayers):
 			currentPlayerIndex = (startingPlayerId + j) % numOfPlayers 
 			# Make it so it loops thorugh all players, starting at the last Winner

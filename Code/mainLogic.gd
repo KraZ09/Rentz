@@ -3,7 +3,7 @@ extends Node2D
 const suites = ["Diamonds", "Hearts", "Clubs", "Spades"]
 var deck: Array[Card] = []
 var currentTrick: Array[Card] = [] # Cards in the current round
-var trickIndex = 0 # Starts at 0, ends at numOfPlayers
+var trickIndex = 0 # Starts at 0, ends at cardsPerPlayer
 var cardsPerPlayer = 2 * numOfPlayers # How many cards does each player have
 signal cardPlayed(player_id: int)
 var leadSuit # Which suit wins the trick
@@ -12,7 +12,7 @@ var canPlay := true # Can the players play a card
 # the round will end early (Ex: Pig was won in first trick)
 var roundShouldEnd := false
 
-var gameModes = ["pig"] # List of playable gameModes
+var gameModes = ["pig", "diamonds", "queens"] # List of playable gameModes
 var currentGameMode : String
 
 var cardAtlas = preload("res://Sprites/all_cards.png") as Texture2D # Spritesheet
@@ -90,7 +90,7 @@ func isValid(card: Card, playerId: int) -> bool: # Validate moves
 					hasLeadSuit = true
 					break
 		if hasLeadSuit and (card.suit != leadSuit): # Make the player follow the suit
-			print("You must follow suit!")
+			print("You must follow the suit!")
 			return false
 		
 		# Everything is fine
@@ -218,7 +218,22 @@ func earlyEndCheck(gameMode : String) -> void: # Avoid tricks that do not affect
 					if c.value == 13 and c.suit == "Hearts":
 						roundShouldEnd = true # Pig was found, end round
 						return
-
+		"diamonds":
+			# In this case, it is faster to start assuming there are no diamonds
+			# and check for them in the player's hands
+			roundShouldEnd = true
+			for player in players:
+				for card in player.hand:
+					if card.suit == "Diamonds":
+						roundShouldEnd = false # There are still diamonds in the game
+						return
+		"queens":
+			roundShouldEnd = true # Check for queens still in game
+			for player in players:
+				for card in player.hand:
+					if card.value == 12:
+						roundShouldEnd = false
+						return
 # Calculate the scores based on gamemode
 func calculateScore(gameMode : String) -> void:  
 	var rScore = 0 # Score of the current round
@@ -230,12 +245,21 @@ func calculateScore(gameMode : String) -> void:
 					if card.value == 13 and card.suit == "Hearts":
 						player.score -= 200 # - 200 points
 						return # There is only one pig in the game so no need to search further
-		# Other gamemodes
+		"diamonds": # Each card of diamonds is -25 points
+			for player in players:
+				for card in player.wonCards:
+					if card.suit == "Diamonds":
+						player.score -= 25;
+		"queens": # Each queen is -50 points
+			for player in players:
+				for card in player.wonCards:
+					if card.value == 12:
+						player.score -= 50
 
 func _ready() -> void:
 	generateCards()
 	instantiatePlayers()
-	currentGameMode = "pig"
+	currentGameMode = "queens"
 	RoundStart(currentGameMode)
 	
 	displayHand(0)

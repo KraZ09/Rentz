@@ -4,6 +4,8 @@ extends Node2D
 
 const suites = ["Diamonds", "Hearts", "Clubs", "Spades"]
 var deck: Array[Card] = []
+
+var numOfPlayers = 4
 var currentTrick: Array[Card] = [] # Cards in the current round
 var trickIndex = 0 # Starts at 0, ends at cardsPerPlayer
 var cardsPerPlayer = 2 * numOfPlayers # How many cards does each player have
@@ -14,12 +16,12 @@ var canPlay := true # Can the players play a card
 # the round will end early (Ex: Pig was won in first trick)
 var roundShouldEnd := false
 
-var gameModes = ["pig", "diamonds", "queens"] # List of playable gameModes
+var gameModes = ["pig", "diamonds", "queens", "totalPlus", "totalMinus"] 
+# List of playable gameModes
 var currentGameMode : String
 
 var cardAtlas = preload("res://Sprites/all_cards.png") as Texture2D # Spritesheet
 
-const numOfPlayers = 4
 var playerScene = preload("res://Scenes/player.tscn") as PackedScene
 var players : Array[Player] = []
 var currentPlayerIndex  = 0 # Id for the player that has to play
@@ -169,7 +171,6 @@ func RoundStart(gameMode : String) -> void: # Minigame loop
 			
 			if roundShouldEnd:
 				print("No objectives left! Round ended early")
-				# NOTE Delete all visuals
 				break # Stop the round
 	
 	print("Round over!")
@@ -181,7 +182,7 @@ func roundEnd() -> void: # Delete all data except score
 	for p in players:
 		p.wonCards.clear()
 		p.hand.clear()
-	# Also delete cards
+	# Also delete card buttons
 	for child in main.get_children():
 		if child is TextureButton:
 			child.queue_free()
@@ -241,8 +242,7 @@ func earlyEndCheck(gameMode : String) -> void: # Avoid tricks that do not affect
 						roundShouldEnd = false
 						return
 # Calculate the scores based on gamemode
-func calculateScore(gameMode : String) -> void:  
-	var rScore = 0 # Score of the current round
+func calculateScore(gameMode : String) -> void:
 	match gameMode:
 		# For the pig variant, the player who wins the K of Hearts loses 200 points
 		"pig": 
@@ -261,11 +261,36 @@ func calculateScore(gameMode : String) -> void:
 				for card in player.wonCards:
 					if card.value == 12:
 						player.score -= 50
-
+		"totalPlus":
+			# Each trick is +25 and Queens/Diamonds/Pig add instead of subtract
+			for player in players:
+				for card in player.wonCards:
+					# Every won trick is 25
+					player.score += (player.wonCards.size() / numOfPlayers) * 25
+					
+					if card.suit == "Diamonds": # D is 20
+						player.score += 25;
+					if card.value == 12: # Q is 50
+						player.score += 50
+					if card.suit == "Hearts" and card.value == 13: # Pig is 200
+						player.score += 200
+		"totalMinus":
+			# Each trick is -25 and Queens/Diamonds/Pig subtract
+			for player in players:
+				for card in player.wonCards:
+					# Every won trick is 25
+					player.score -= (player.wonCards.size() / numOfPlayers ) * 25
+					
+					if card.suit == "Diamonds": # D is 20
+						player.score -= 25;
+					if card.value == 12: # Q is 50
+						player.score -= 50
+					if card.suit == "Hearts" and card.value == 13: # Pig is 200
+						player.score -= 200
 func _ready() -> void:
 	generateCards()
 	instantiatePlayers()
-	currentGameMode = "queens"
+	currentGameMode = "totalPlus"
 	RoundStart(currentGameMode)
 	
 	displayHand(0)

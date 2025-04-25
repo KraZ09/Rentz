@@ -1,5 +1,7 @@
 extends Node2D
 
+@onready var main: Node2D = $"."
+
 const suites = ["Diamonds", "Hearts", "Clubs", "Spades"]
 var deck: Array[Card] = []
 var currentTrick: Array[Card] = [] # Cards in the current round
@@ -179,6 +181,10 @@ func roundEnd() -> void: # Delete all data except score
 	for p in players:
 		p.wonCards.clear()
 		p.hand.clear()
+	# Also delete cards
+	for child in main.get_children():
+		if child is TextureButton:
+			child.queue_free()
 
 func trickEnd() -> void: # Determine the winner of the currentTrick
 	# The first card determines what the others must play

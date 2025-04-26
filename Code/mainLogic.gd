@@ -216,6 +216,11 @@ func displayScores() -> void: # Display all scores
 	for p in players:
 		print("Player %d scored %d points" % [p.id, p.score])
 
+# As the Rentz gamemode plays completely differently from the other, we need a special function
+func rentzGameMode() -> void: 
+	var smallestCard = 14 - (numOfPlayers * 2) # If this card is played, it skips the next player's turn
+	var middleCard = numOfPlayers
+
 func earlyEndCheck(gameMode : String) -> void: # Avoid tricks that do not affect score
 	roundShouldEnd = false # Reset earlyEnd bool
 	match gameMode:
@@ -264,9 +269,10 @@ func calculateScore(gameMode : String) -> void:
 		"totalPlus":
 			# Each trick is +25 and Queens/Diamonds/Pig add instead of subtract
 			for player in players:
+				# Every won trick is 25
+				player.score += (player.wonCards.size() / numOfPlayers) * 25
+				
 				for card in player.wonCards:
-					# Every won trick is 25
-					player.score += (player.wonCards.size() / numOfPlayers) * 25
 					
 					if card.suit == "Diamonds": # D is 20
 						player.score += 25;
@@ -277,9 +283,10 @@ func calculateScore(gameMode : String) -> void:
 		"totalMinus":
 			# Each trick is -25 and Queens/Diamonds/Pig subtract
 			for player in players:
+				# Every won trick is 25
+				player.score -= (player.wonCards.size() / numOfPlayers ) * 25
+				
 				for card in player.wonCards:
-					# Every won trick is 25
-					player.score -= (player.wonCards.size() / numOfPlayers ) * 25
 					
 					if card.suit == "Diamonds": # D is 20
 						player.score -= 25;

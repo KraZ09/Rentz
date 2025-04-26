@@ -219,7 +219,9 @@ func displayScores() -> void: # Display all scores
 # As the Rentz gamemode plays completely differently from the other, we need a special function
 func rentzGameMode() -> void: 
 	var smallestCard = 14 - (numOfPlayers * 2) # If this card is played, it skips the next player's turn
-	var middleCard = numOfPlayers
+	# The middlecard is the first card than can be played
+	var middleCard = 14 - numOfPlayers
+	# NOTE Will be added later
 
 func earlyEndCheck(gameMode : String) -> void: # Avoid tricks that do not affect score
 	roundShouldEnd = false # Reset earlyEnd bool
